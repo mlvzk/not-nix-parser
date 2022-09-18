@@ -1,0 +1,36 @@
+use crate::ast;
+
+grammar;
+
+Ident: ast::Ident<'input> = {
+    <r"[a-zA-Z_][a-zA-Z0-9_]*"> => ast::Ident(<>),
+};
+
+Number: f64 = {
+    <n:(r"-?\d+(\.\d*)?")> => n.parse().unwrap(),
+};
+
+pub Expression: ast::Expression<'input> = {
+    #[precedence(level="0")]
+    <Number> => ast::Expression::Number(<>),
+    #[precedence(level="0")]
+    <Ident> => ast::Expression::Ident(<>),
+    #[precedence(level="0")]
+    "(" <Expression> ")" => <>,
+    #[precedence(level="1")] #[assoc(side="left")]
+    <a:Expression> "*" <b:Expression> => ast::Expression::Multiply(Box::new(a), Box::new(b)),
+    #[precedence(level="2")] #[assoc(side="left")]
+    <a:Expression> "+" <b:Expression> => ast::Expression::Add(Box::new(a), Box::new(b)),
+    #[precedence(level="3")]
+    "let" <name:Ident> "=" <value:Expression> "in" <in_expr:Expression> => ast::Expression::Let {
+        name: name,
+        value: Box::new(value),
+        in_expr: Box::new(in_expr),
+    },
+    #[precedence(level="3")]
+    "if" <cond:Expression> "then" <then_expr:Expression> "else" <else_expr:Expression> => ast::Expression::If {
+        condition: Box::new(cond),
+        then_expr: Box::new(then_expr),
+        else_expr: Box::new(else_expr),
+    },
+};
