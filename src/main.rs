@@ -1,4 +1,5 @@
 mod ast;
+mod builder;
 mod interpreter;
 
 use lalrpop_util::lalrpop_mod;
@@ -9,11 +10,11 @@ fn main() {
     let expr = nix::ExpressionParser::new()
         .parse(
             r#"
-            let a = b + 1 in
+            let a = 1 in
             let b = 2 in
             if a then
                 a + a * b
-            else -1
+            else 0
         "#,
         )
         .unwrap();

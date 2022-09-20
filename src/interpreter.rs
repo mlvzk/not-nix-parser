@@ -2,27 +2,21 @@ use std::{borrow::Cow, collections::HashMap};
 
 use crate::ast;
 
-#[derive(Debug, Clone)]
-enum Variables<'a> {
-    None,
-    Some(HashMap<&'a str, (Cow<'a, Variables<'a>>, &'a ast::Expression<'a>)>),
-}
-
 pub(crate) struct Interpreter<'input> {
-    variables: Vec<(&'input str, &'input ast::Expression<'input>)>,
+    variables: HashMap<&'input str, i64>,
 }
 
 impl<'input> Interpreter<'input> {
     pub(crate) fn new() -> Self {
         Self {
-            variables: Variables::Some(HashMap::new()),
+            variables: HashMap::new(),
         }
     }
 
-    pub(crate) fn interpret(&mut self, expr: &'input ast::Expression) -> f64 {
+    pub(crate) fn interpret(&mut self, expr: &'input ast::Expression) -> i64 {
         match expr {
             ast::Expression::Number(n) => *n,
-            ast::Expression::Ident(ident) => self.interpret(self.variables[ident.0].1),
+            ast::Expression::Ident(ident) => self.variables[ident.0],
             ast::Expression::Add(a, b) => self.interpret(a) + self.interpret(b),
             ast::Expression::Multiply(a, b) => self.interpret(a) * self.interpret(b),
             ast::Expression::Let {
@@ -30,8 +24,8 @@ impl<'input> Interpreter<'input> {
                 value,
                 in_expr,
             } => {
-                self.variables
-                    .insert(name.0, (self.variables.clone(), value));
+                let value = self.interpret(value);
+                self.variables.insert(name.0, value);
                 self.interpret(in_expr)
             }
             ast::Expression::If {
@@ -39,12 +33,14 @@ impl<'input> Interpreter<'input> {
                 then_expr,
                 else_expr,
             } => {
-                if self.interpret(condition) != 0.0 {
+                if self.interpret(condition) != 0 {
                     self.interpret(then_expr)
                 } else {
                     self.interpret(else_expr)
                 }
             }
+            ast::Expression::LessThan(_, _) => todo!(),
+            ast::Expression::And(_, _) => todo!(),
         }
     }
 }
